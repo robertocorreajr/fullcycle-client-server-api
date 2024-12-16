@@ -1,0 +1,29 @@
+FROM golang:1.23.4-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache gcc musl-dev
+
+# Habilita cgo e define arquitetura
+ENV CGO_ENABLED=1 GOOS=linux GOARCH=arm64
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+WORKDIR /app/cmd/server
+# Compila o binário de forma totalmente estática
+RUN go build -ldflags '-extldflags "-static"' -o server main.go
+
+FROM alpine:latest
+WORKDIR /app
+
+# Instala o utilitário 'file' para verificar o tipo do binário
+RUN apk add --no-cache file
+
+COPY --from=builder /app/cmd/server/server .
+
+# Instala SQLite3 binário (opcional, caso queira inspecionar) 
+RUN apk add --no-cache sqlite
+RUN ls -la && file server
+
+ENTRYPOINT ["./server"]

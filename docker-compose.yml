@@ -1,0 +1,25 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: server
+    ports:
+      - "8080:8080"
+    environment:
+      - API_URL=https://economia.awesomeapi.com.br/json/last/USD-BRL
+      - DB_PATH=cotacoes.db
+      - SERVER_PORT=8080
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: client
+    depends_on:
+      - server
+    environment:
+      - SERVER_URL=http://server:8080
+
+volumes:
+  db-data:

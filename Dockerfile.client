@@ -1,0 +1,19 @@
+# Etapa 1: Builder
+FROM --platform=linux/arm64 golang:1.23.4-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache gcc musl-dev
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+WORKDIR /app/cmd/client
+RUN go build -ldflags '-extldflags "-static"' -o /client main.go
+
+# Etapa 2: Runner
+FROM scratch
+WORKDIR /app
+COPY --from=builder /client /app/client
+ENTRYPOINT ["./client"]
